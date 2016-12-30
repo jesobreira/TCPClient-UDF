@@ -101,7 +101,7 @@ Func _TCPClient_Broadcast($sData, $iExceptSocket = 0)
 		If $__TCPClient_Sockets[$i] <> 0 And $i <> $iExceptSocket Then
 			TCPSend($__TCPClient_Sockets[$i], $sData)
 			;If @error Then Call($_TCPClient_OnDisconnectCallback, $__TCPClient_SocketCache[$i][0], $__TCPClient_SocketCache[$i][1])
-			If @error  Then __TCPClient_KillConnection($__TCPClient_Sockets[$i])			
+			If @error Then __TCPClient_KillConnection($__TCPClient_Sockets[$i])
 			If $_TCPClient_DebugMode Then __TCPClient_Log("Sent " & $sData & " to socket " & $__TCPClient_Sockets[$i] & "(" & _TCPClient_SocketToIP($__TCPClient_Sockets[$i]) & ")")
 		EndIf
 	Next
@@ -182,7 +182,7 @@ Func __TCPClient_Recv()
 				If @error Then
 					ConsoleWrite('log 2')
 					__TCPClient_KillConnection($i)
-					ContinueLoop(2)
+					ContinueLoop (2)
 				EndIf
 				$sData &= $recv
 			Until $recv = ""
