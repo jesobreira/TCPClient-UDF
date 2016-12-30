@@ -88,7 +88,11 @@ EndFunc   ;==>_TCPClient_SetParam
 
 Func _TCPClient_Send($iSocket, $sData)
 	If $_TCPClient_DebugMode Then __TCPClient_Log("Sent " & $sData & " to socket " & $iSocket & "(" & _TCPClient_SocketToIP($iSocket) & ")")
-	Return TCPSend($iSocket, $sData)
+	Local $ret = TCPSend($iSocket, $sData)
+	If @error Then
+		__TCPClient_KillConnection($iSocket)
+	EndIf
+	Return $ret
 EndFunc   ;==>_TCPClient_Send
 
 Func _TCPClient_Broadcast($sData, $iExceptSocket = 0)
@@ -96,6 +100,8 @@ Func _TCPClient_Broadcast($sData, $iExceptSocket = 0)
 	For $i = 1 To $__TCPClient_Sockets[0]
 		If $__TCPClient_Sockets[$i] <> 0 And $i <> $iExceptSocket Then
 			TCPSend($__TCPClient_Sockets[$i], $sData)
+			;If @error Then Call($_TCPClient_OnDisconnectCallback, $__TCPClient_SocketCache[$i][0], $__TCPClient_SocketCache[$i][1])
+			If @error  Then __TCPClient_KillConnection($__TCPClient_Sockets[$i])			
 			If $_TCPClient_DebugMode Then __TCPClient_Log("Sent " & $sData & " to socket " & $__TCPClient_Sockets[$i] & "(" & _TCPClient_SocketToIP($__TCPClient_Sockets[$i]) & ")")
 		EndIf
 	Next
@@ -162,8 +168,9 @@ EndFunc   ;==>__TCPClient_Log
 Func __TCPClient_Recv()
 	For $i = 1 To $__TCPClient_Sockets[0]
 		Dim $sData
+		If Not $__TCPClient_Sockets[$i] Then ContinueLoop
 		$recv = TCPRecv($__TCPClient_Sockets[$i], 1000000)
-		If @error = 10054 Then ; Disconnected by user
+		If @error Then
 			__TCPClient_KillConnection($i)
 			ContinueLoop
 		EndIf
@@ -172,12 +179,17 @@ Func __TCPClient_Recv()
 			$sData = $recv
 			Do
 				$recv = TCPRecv($__TCPClient_Sockets[$i], 1000000)
+				If @error Then
+					ConsoleWrite('log 2')
+					__TCPClient_KillConnection($i)
+					ContinueLoop(2)
+				EndIf
 				$sData &= $recv
 			Until $recv = ""
 			If $_TCPClient_AutoTrim Then
 				$sData = StringStripWS($sData, 1 + 2)
 			EndIf
-			If $_TCPClient_DebugMode Then __TCPClient_Log("Client " & _TCPClient_SocketToIP($__TCPClient_Sockets[$i]) & " sent " & $sData)
+			If $_TCPClient_DebugMode Then __TCPClient_Log("Client " & _TCPClient_SocketToIP($__TCPClient_Sockets[$i]) & " sent " & StringLeft($sData, 255))
 			Call($_TCPClient_OnReceiveCallback, $__TCPClient_Sockets[$i], _TCPClient_SocketToIP($__TCPClient_Sockets[$i]), $sData, $__TCPClient_Pars[$i])
 		EndIf
 	Next
