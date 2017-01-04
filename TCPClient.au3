@@ -43,6 +43,7 @@ Func _TCPClient_AutoTrim($bMode = Default)
 EndFunc   ;==>_TCPClient_AutoTrim
 
 Func _TCPClient_Connect($sSvr, $iPort)
+	$sSvr = TCPNameToIP($sSvr) ; if it was provided a domain/svr name, convert to IP
 	$conn = TCPConnect($sSvr, $iPort)
 	If $conn = -1 Or $conn = 0 Then
 		Return SetError(@error, 0, $conn)
